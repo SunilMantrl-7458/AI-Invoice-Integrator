@@ -1,0 +1,43 @@
+{% extends 'testapp/base.html' %}
+
+{% block content %}
+<h2>Comparison Results</h2>
+
+{% if results %}
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Vendor Name</th>
+                <th>Invoice Type</th>
+                <th>Invoice Number</th>
+                <th>Mismatched Fields</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for result in results %}
+                <tr>
+                    <td>{{ result.vendor_name }}</td>
+                    <td>{{ result.invoice_type }}</td>
+                    <td>{{ result.invoice_number }}</td>
+                    <td>
+                        {% if result.mismatches %}
+                            <ul>
+                                {% for mismatch in result.mismatches %}
+                                    <li>
+                                        <strong>{{ mismatch.field }}</strong>: 
+                                        Excel ({{ mismatch.excel_value }}) != DB ({{ mismatch.db_value }})
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            No mismatches
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <p>No matching records found.</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,113 @@
+{% extends 'testapp/base.html' %}
+
+{% block title %}Add Invoice{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h4 class="mb-0">{% if invoice %}Edit{% else %}Add New{% endif %} Invoice</h4>
+    </div>
+    <div class="card-body">
+        <form id="invoiceForm">
+            {% csrf_token %}
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="invoice_number" class="form-label">Invoice Number*</label>
+                    <input type="text" name="invoice_number" id="invoice_number" 
+                           class="form-control" placeholder="INV-0001" required>
+                    <div id="invoice_number_error" class="invalid-feedback"></div>
+                </div>
+                <div class="col-md-6">
+                    <label for="date_issued" class="form-label">Date Issued*</label>
+                    <input type="date" name="date_issued" id="date_issued" 
+                           class="form-control" required>
+                    <div id="date_issued_error" class="invalid-feedback"></div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="vendor_name" class="form-label">Vendor Name*</label>
+                <input type="text" name="vendor_name" id="vendor_name" 
+                       class="form-control" placeholder="Vendor Company" required>
+                <div id="vendor_name_error" class="invalid-feedback"></div>
+            </div>
+
+            <div class="mb-3">
+                <label for="amount" class="form-label">Amount*</label>
+                <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" name="amount" id="amount" step="0.01" 
+                           class="form-control" placeholder="0.00" required>
+                </div>
+                <div id="amount_error" class="invalid-feedback"></div>
+            </div>
+
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary" id="submitButton">
+                    <i class="fas fa-save me-2"></i>Save Invoice
+                </button>
+            </div>
+
+            <div id="loading" class="text-center mt-3" style="display: none;">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Processing your invoice...</p>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+    document.getElementById('invoiceForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Reset validation states
+        document.querySelectorAll('.is-invalid').forEach(el => {
+            el.classList.remove('is-invalid');
+        });
+        document.querySelectorAll('.invalid-feedback').forEach(el => {
+            el.textContent = '';
+        });
+
+        const formData = new FormData(this);
+        const data = Object.fromEntries(formData.entries());
+
+        // Show loading state
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('submitButton').disabled = true;
+
+        axios.post('/api/invoices/', data, { 
+            headers: { 'X-CSRFToken': '{{ csrf_token }}' } 
+        })
+        .then(() => {
+            window.location.href = '/invoices/';
+        })
+        .catch(error => {
+            document.getElementById('submitButton').disabled = false;
+            document.getElementById('loading').style.display = 'none';
+
+            if (error.response?.data?.errors) {
+                const errors = error.response.data.errors;
+                Object.keys(errors).forEach(field => {
+                    const input = document.getElementById(field);
+                    const errorEl = document.getElementById(field + '_error');
+                    if (input && errorEl) {
+                        input.classList.add('is-invalid');
+                        errorEl.textContent = errors[field].join(', ');
+                    }
+                });
+            } else {
+                alert("An unexpected error occurred. Please try again.");
+            }
+        });
+    });
+
+    // Set today's date as default
+    document.addEventListener('DOMContentLoaded', function() {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('date_issued').value = today;
+    });
+</script>
+{% endblock %}

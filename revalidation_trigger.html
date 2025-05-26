@@ -1,0 +1,9 @@
+{% extends "testapp/base.html" %}
+
+{% block content %}
+<h2>Trigger Re-validation</h2>
+<form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-primary">Run Re-validation</button>
+</form>
+{% endblock %}

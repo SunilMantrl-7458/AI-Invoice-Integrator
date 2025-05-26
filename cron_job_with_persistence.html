@@ -1,0 +1,164 @@
+{% extends 'testapp/base.html' %}
+
+{% block title %}Cron Job with Spinner Persistence{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="text-center mb-4">Cron Job with Spinner Persistence</h2>
+
+    {% if message %}
+        <div class="alert alert-success" role="alert" id="server-message">
+            {{ message }}
+        </div>
+    {% endif %}
+
+    <div class="d-flex flex-column align-items-start gap-3">
+
+        <!-- Extraction Form -->
+        <form method="post" action="{% url 'manual_extraction_run' %}" class="d-flex align-items-center gap-2 ms-3" id="extraction-form" onsubmit="return false;">
+            {% csrf_token %}
+            <label class="mb-0 ms-2">Extraction</label>
+            <button type="button" class="btn btn-primary btn-sm" id="extraction-button">Run</button>
+        </form>
+
+        <!-- Extraction Spinner -->
+        <div id="extraction-message" class="ms-5 mt-1" style="display: none; color: #0d6efd; font-weight: 500;">
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            Extraction is processing please wait...
+        </div>
+
+        <!-- Comparison Form -->
+        <form method="post" action="{% url 'manual_comparison_run' %}" class="d-flex align-items-center gap-2 ms-3 mt-3" id="comparison-form" onsubmit="return false;">
+            {% csrf_token %}
+            <label class="mb-0 ms-2">Comparison</label>
+            <button type="button" class="btn btn-secondary btn-sm" id="comparison-button">Run</button>
+        </form>
+
+        <!-- Comparison Spinner -->
+        <div id="comparison-message" class="ms-5 mt-1" style="display: none; color: #6c757d; font-weight: 500;">
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            Comparison is processing please wait...
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for Dynamic UI with persistence -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const extractionForm = document.getElementById('extraction-form');
+    const comparisonForm = document.getElementById('comparison-form');
+    const extractionMessage = document.getElementById('extraction-message');
+    const comparisonMessage = document.getElementById('comparison-message');
+    const extractionButton = document.getElementById('extraction-button');
+    const comparisonButton = document.getElementById('comparison-button');
+
+    function handlePolling(statusUrl, messageElement, buttonElement, completeMessageId, completeMessageText, storageKey) {
+        function pollStatus() {
+            fetch(statusUrl)
+                .then(response => response.json())
+                .then(statusData => {
+                    if (statusData.status === 'processing') {
+                        messageElement.style.display = 'block';
+                        buttonElement.disabled = true;
+                        localStorage.setItem(storageKey, 'processing');
+                        setTimeout(pollStatus, 2000);
+                    } else if (statusData.status === 'success') {
+                        messageElement.style.display = 'none';
+                        buttonElement.disabled = false;
+                        localStorage.removeItem(storageKey);
+                        let oldMsg = document.getElementById(completeMessageId);
+                        if (oldMsg) oldMsg.remove();
+                        const msgDiv = document.createElement('div');
+                        msgDiv.className = 'alert alert-success mt-2';
+                        msgDiv.id = completeMessageId;
+                        msgDiv.textContent = completeMessageText;
+                        buttonElement.parentNode.parentNode.insertBefore(msgDiv, buttonElement.parentNode.nextSibling);
+                        setTimeout(() => { if (msgDiv.parentNode) msgDiv.remove(); }, 10000);
+                    } else if (statusData.status === 'failed') {
+                        messageElement.style.display = 'none';
+                        buttonElement.disabled = false;
+                        localStorage.removeItem(storageKey);
+                        alert(completeMessageText + ' failed. Please try again.');
+                    } else {
+                        messageElement.style.display = 'none';
+                        buttonElement.disabled = false;
+                        localStorage.removeItem(storageKey);
+                    }
+                });
+        }
+        pollStatus();
+    }
+
+    extractionButton.addEventListener('click', function () {
+        localStorage.setItem('extraction_status', 'processing');
+        extractionMessage.style.display = 'block';
+        extractionButton.disabled = true;
+        let oldMsg = document.getElementById('extraction-complete-message');
+        if (oldMsg) oldMsg.remove();
+        extractionMessage.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Extraction is processing please wait...';
+
+        fetch("{% url 'manual_extraction_run' %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': extractionForm.querySelector('[name=csrfmiddlewaretoken]').value,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            handlePolling("{% url 'extraction_status' %}", extractionMessage, extractionButton, 'extraction-complete-message', 'Extraction is completed. Please Check Extraction Dashboard.', 'extraction_status');
+        })
+        .catch(err => {
+            console.error('Extraction failed:', err);
+            extractionMessage.style.display = 'none';
+            extractionButton.disabled = false;
+            localStorage.removeItem('extraction_status');
+            alert('Extraction failed: ' + err);
+        });
+    });
+
+    comparisonButton.addEventListener('click', function () {
+        localStorage.setItem('comparison_status', 'processing');
+        comparisonMessage.style.display = 'block';
+        comparisonButton.disabled = true;
+        let oldMsg = document.getElementById('comparison-complete-message');
+        if (oldMsg) oldMsg.remove();
+        comparisonMessage.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Comparison is processing please wait...';
+
+        fetch("{% url 'manual_comparison_run' %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': comparisonForm.querySelector('[name=csrfmiddlewaretoken]').value,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            handlePolling("{% url 'comparison_status' %}", comparisonMessage, comparisonButton, 'comparison-complete-message', 'Comparison is completed. Please Check Comparison Dashboard.', 'comparison_status');
+        })
+        .catch(err => {
+            console.error('Comparison failed:', err);
+            comparisonMessage.style.display = 'none';
+            comparisonButton.disabled = false;
+            localStorage.removeItem('comparison_status');
+            alert('Comparison failed: ' + err);
+        });
+    });
+
+    // On page load, resume polling if jobs are processing
+    if (localStorage.getItem('extraction_status') === 'processing') {
+        extractionMessage.style.display = 'block';
+        extractionButton.disabled = true;
+        extractionMessage.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Extraction is processing please wait...';
+        handlePolling("{% url 'extraction_status' %}", extractionMessage, extractionButton, 'extraction-complete-message', 'Extraction is completed. Please Check Extraction Dashboard.', 'extraction_status');
+    }
+
+    if (localStorage.getItem('comparison_status') === 'processing') {
+        comparisonMessage.style.display = 'block';
+        comparisonButton.disabled = true;
+        comparisonMessage.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Comparison is processing please wait...';
+        handlePolling("{% url 'comparison_status' %}", comparisonMessage, comparisonButton, 'comparison-complete-message', 'Comparison is completed. Please Check Comparison Dashboard.', 'comparison_status');
+    }
+});
+</script>
+{% endblock %}

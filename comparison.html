@@ -1,0 +1,62 @@
+{% extends "testapp/base.html" %}
+
+{% block content %}
+<h2>Master Data Comparison</h2>
+
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <label for="master_excel">Upload Master Data Excel File:</label>
+    <input type="file" name="master_excel" id="master_excel" required>
+    <br><br>
+    <!-- Removed data_type selection to support mixed domestic/import in Excel -->
+    <button type="submit">Compare</button>
+</form>
+
+{% if error_message %}
+    <p style="color: red;">{{ error_message }}</p>
+{% endif %}
+
+{% if comparison_results %}
+    <h3>Comparison Results</h3>
+    <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; width: 100%;">
+        <thead style="background-color: #f2f2f2;">
+            <tr>
+                <th style="padding: 8px; text-align: left;">Type</th>
+                <th style="padding: 8px; text-align: left;">Invoice Number / Vendor Name</th>
+                <th style="padding: 8px; text-align: left;">Status</th>
+                <th style="padding: 8px; text-align: left;">Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for result in comparison_results %}
+            <tr style="background-color: {% cycle '#ffffff' '#f9f9f9' %};">
+                <td style="padding: 8px;">{{ result.type|default:"N/A" }}</td>
+                <td style="padding: 8px;">
+                    {% if result.invoice_number %}
+                        {{ result.invoice_number }}
+                    {% elif result.vendor_name %}
+                        {{ result.vendor_name }}
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </td>
+                <td style="padding: 8px;">{{ result.status }}</td>
+                <td style="padding: 8px;">{{ result.description }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div style="margin-top: 15px;">
+        <span>Page {{ comparison_results.number }} of {{ comparison_results.paginator.num_pages }}</span>
+        <div style="float: right;">
+            {% if comparison_results.has_previous %}
+                <a href="?page={{ comparison_results.previous_page_number }}">Previous</a>
+            {% endif %}
+            {% if comparison_results.has_next %}
+                <a href="?page={{ comparison_results.next_page_number }}">Next</a>
+            {% endif %}
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

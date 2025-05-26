@@ -1,0 +1,38 @@
+{% extends 'testapp/base.html' %}
+
+{% block title %}Manual Extraction Trigger{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <h2>Manual Data Extraction</h2>
+  <p>Click the button below to manually trigger the data extraction process.</p>
+  <button id="triggerExtractionBtn" class="btn btn-primary">Trigger Extraction</button>
+  <div id="resultMessage" class="mt-3"></div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+  $('#triggerExtractionBtn').click(function() {
+    $('#resultMessage').text('Triggering extraction, please wait...');
+    $.ajax({
+      url: "{% url 'manual_extraction_trigger' %}",
+      type: "POST",
+      headers: {
+        'X-CSRFToken': '{{ csrf_token }}'
+      },
+      success: function(response) {
+        $('#resultMessage').text(response.message);
+      },
+      error: function(xhr) {
+        if (xhr.responseJSON && xhr.responseJSON.error) {
+          $('#resultMessage').text('Error: ' + xhr.responseJSON.error);
+        } else {
+          $('#resultMessage').text('An unexpected error occurred.');
+        }
+      }
+    });
+  });
+});
+</script>
+{% endblock %}

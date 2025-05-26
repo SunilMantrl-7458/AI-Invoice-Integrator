@@ -1,0 +1,10 @@
+{% extends "testapp/base.html" %}
+
+{% block content %}
+<h2>Application Logs</h2>
+<div style="white-space: pre-wrap; background-color: #f8f9fa; padding: 10px; border: 1px solid #ddd; height: 400px; overflow-y: scroll;">
+    {% for line in logs %}
+        {{ line }}<br>
+    {% endfor %}
+</div>
+{% endblock %}

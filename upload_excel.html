@@ -1,0 +1,20 @@
+{% extends "testapp/base.html" %}
+
+{% block content %}
+<h2>Compare Excel with Database</h2>
+
+
+
+<!-- Display error message if any -->
+{% if error %}
+    <div style="color: red; margin-bottom: 10px;">{{ error }}</div>
+{% endif %}
+
+<p>The Excel file is being read directly from the path: <strong>C:\Users\mantr\Downloads\Vendor master.XLSX</strong>.</p>
+
+<!-- Form to trigger the comparison -->
+<form method="post" action="{% url 'compare_master_data' %}">
+    {% csrf_token %}
+    <button type="submit">Start Comparison</button>
+</form>
+{% endblock %}

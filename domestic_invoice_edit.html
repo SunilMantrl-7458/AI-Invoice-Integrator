@@ -1,0 +1,20 @@
+{% extends 'testapp/base.html' %}
+
+{% block title %}Invoice List{% endblock %}
+
+{% block content %}
+    <title>Edit Domestic</title>
+</head>
+<body>
+    <div class="container">
+        <h1>Edit Domestic Invoice</h1>
+        <form method="POST" >
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">Save changes</button>
+        <a href="{% url 'invoice-list' %}">Cancel</a>
+        </form>
+    </div>
+</body>
+</html>
+{% endblock %}

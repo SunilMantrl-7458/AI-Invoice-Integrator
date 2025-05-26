@@ -1,0 +1,156 @@
+{% extends "testapp/base.html" %}
+
+{% block content %}
+<style>
+    .summary-container {
+        display: flex;
+        gap: 20px; /* Tight spacing between the two boxes */
+        margin-bottom: 10px;
+    }
+
+    .summary-box {
+        width: 220px;
+        height: 80px;
+        padding: 10px;
+        color: white;
+        font-size: 28px;
+        font-weight: bold;
+        text-align: center;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+    }
++
++.summary-box .sub-label {
++    width: 100%;
++    text-align: center;
++}
+
+    .domestic-header {
+        background-color: #28a745;
+    }
+
+    .import-header {
+        background-color: #007bff;
+    }
+
+    .sub-label {
+        font-size: 14px;
+        font-weight: normal;
+        margin-top: 4px;
+    }
+
+    .invoice-section {
+        border: 1px solid #ccc;
+        padding: 20px;
+        margin-bottom: 30px;
+        border-radius: 10px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+    }
+
+    th, td {
+        border: 1px solid #ccc;
+        padding: 10px 14px;
+        text-align: left;
+    }
+
+    h3 {
+        margin: 20px 0 10px 0;
+    }
+</style>
+
+<!-- Domestic Section -->
+<div class="invoice-section">
+    <div class="summary-container">
+        <div class="summary-box domestic-header">
+            {{ domestic_mismatched_count_total|stringformat:"02d" }}
+            <span class="sub-label">Invoices with mismatches</span>
+        </div>
+        <div class="summary-box domestic-header">
+            {{ domestic_results|length|stringformat:"02d" }}
+            <span class="sub-label">Domestic invoices</span>
+        </div>
+    </div>
+
+    <h3>Domestic Invoices</h3>
+    {% if domestic_results %}
+    <table>
+        <thead>
+            <tr>
+                <th>Invoice Number</th>
+                <th>Vendor Name</th>
+                <th>Mismatched Fields</th>
+                <th>Invoice Data</th>
+                <th>Master Data</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for invoice in domestic_results %}
+            <tr>
+                <td>{{ invoice.invoice_number }}</td>
+                <td>{{ invoice.vendor_name }}</td>
+                <td>{{ invoice.mismatched_fields }}</td>
+                <td>{{ invoice.invoice_data }}</td>
+                <td>{{ invoice.master_data }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>No mismatches found in Domestic Invoices.</p>
+    {% endif %}
+</div>
+
+<!-- Import Section -->
+<div class="invoice-section">
+    <div class="summary-container">
+        <div class="summary-box import-header">
+            {{ import_mismatched_count_total|stringformat:"02d" }}
+            <span class="sub-label">Invoices with mismatches</span>
+        </div>
+        <div class="summary-box import-header">
+            {{ import_results|length|stringformat:"02d" }}
+            <span class="sub-label">Import invoices</span>
+        </div>
+    </div>
+
+    <h3>Import Invoices</h3>
+    {% if import_results %}
+    <table>
+        <thead>
+            <tr>
+                <th>Invoice Number</th>
+                <th>Vendor Name</th>
+                <th>Mismatched Field</th>
+                <th>Invoice Data</th>
+                <th>Master Data</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for invoice in import_results %}
+            <tr>
+                <td>{{ invoice.invoice_number }}</td>
+                <td>{{ invoice.vendor_name }}</td>
+                <td>{{ invoice.mismatched_fields }}</td>
+                <td>{{ invoice.invoice_data }}</td>
+                <td>{{ invoice.master_data }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>No mismatches found in Import Invoices.</p>
+    {% endif %}
+</div>
+
+{% endblock %}
+    

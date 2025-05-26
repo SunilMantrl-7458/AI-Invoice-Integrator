@@ -1,0 +1,187 @@
+{% extends 'testapp/base.html' %}
+
+{% block title %}Manual Trigger {% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="text-center mb-4">Manual Trigger</h2>
+
+    {% if message %}
+        <div class="alert alert-success" role="alert" id="server-message">
+            {{ message }}
+        </div>
+    {% endif %}
+
+    <div class="d-flex flex-column align-items-start gap-3">
+        <!-- Extraction Form -->
+        <form method="post" action="{% url 'manual_extraction_run' %}" class="d-flex align-items-center gap-2 ms-3" id="extraction-form" onsubmit="return false;">
+            {% csrf_token %}
+            <label class="mb-0 ms-2">Extraction</label>
+            <button type="button" class="btn btn-primary btn-sm" id="extraction-button">Run</button>
+        </form>
+
+        <div class="extraction-status-container ms-3">
+            <div id="extraction-message" class="mb-2" style="display: none; color: #0d6efd; font-weight: 500;">
+                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Extraction is processing, please wait...
+            </div>
+            <div id="extraction-completion-container" class="mb-2" style="display: none;">
+                <div id="extraction-complete-message" class="alert mt-2" style="display: none;"></div>
+            </div>
+        </div>
+
+        <!-- Comparison Form -->
+        <form method="post" action="{% url 'manual_comparison_run' %}" class="d-flex align-items-center gap-2 ms-3 mt-3" id="comparison-form" onsubmit="return false;">
+            {% csrf_token %}
+            <label class="mb-0 ms-2">Comparison</label>
+            <button type="button" class="btn btn-secondary btn-sm" id="comparison-button">Run</button>
+        </form>
+
+        <div class="comparison-status-container ms-3">
+            <div id="comparison-message" class="mb-2" style="display: none; color: #6c757d; font-weight: 500;">
+                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Comparison is processing, please wait...
+            </div>
+            <div id="comparison-completion-container" class="mb-2" style="display: none;">
+                <div id="comparison-complete-message" class="alert mt-2" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    #extraction-completion-container,
+    #comparison-completion-container {
+        transition: opacity 0.5s ease-in-out;
+        opacity: 0;
+    }
+
+    #extraction-completion-container.show,
+    #comparison-completion-container.show {
+        opacity: 1;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const extractionButton = document.getElementById('extraction-button');
+    const comparisonButton = document.getElementById('comparison-button');
+
+    const extractionForm = document.getElementById('extraction-form');
+    const comparisonForm = document.getElementById('comparison-form');
+
+    const extractionMessage = document.getElementById('extraction-message');
+    const comparisonMessage = document.getElementById('comparison-message');
+
+    const extractionCompleteMessage = document.getElementById('extraction-complete-message');
+    const comparisonCompleteMessage = document.getElementById('comparison-complete-message');
+
+    const extractionCompleteContainer = document.getElementById('extraction-completion-container');
+    const comparisonCompleteContainer = document.getElementById('comparison-completion-container');
+
+    function updateUI(type, isRunning, status) {
+        const messageEl = type === 'extraction' ? extractionMessage : comparisonMessage;
+        const completeMessageEl = type === 'extraction' ? extractionCompleteMessage : comparisonCompleteMessage;
+        const completeContainerEl = type === 'extraction' ? extractionCompleteContainer : comparisonCompleteContainer;
+        const buttonEl = type === 'extraction' ? extractionButton : comparisonButton;
+
+        if (isRunning) {
+            messageEl.style.display = 'block';
+            buttonEl.disabled = true;
+            completeContainerEl.style.display = 'none';
+        } else {
+            messageEl.style.display = 'none';
+            buttonEl.disabled = false;
+
+            if (status === 'success' || status === 'failed') {
+                completeMessageEl.textContent = status === 'success' ?
+                    `${type.charAt(0).toUpperCase() + type.slice(1)} completed successfully` :
+                    `${type.charAt(0).toUpperCase() + type.slice(1)} failed`;
+
+                completeMessageEl.className = `alert mt-2 ${status === 'success' ? 'alert-success' : 'alert-danger'}`;
+                completeMessageEl.style.display = 'block';
+                completeContainerEl.style.display = 'block';
+                completeContainerEl.classList.add('show');
+
+                setTimeout(() => {
+                    completeContainerEl.classList.remove('show');
+                    setTimeout(() => {
+                        completeMessageEl.style.display = 'none';
+                        completeContainerEl.style.display = 'none';
+                    }, 500);
+                }, 10000);
+
+                // Clear session flag
+                sessionStorage.removeItem(`${type}Started`);
+            }
+        }
+    }
+
+    function getStatus(url) {
+        return fetch(url)
+            .then(res => res.json())
+            .then(data => data.status)
+            .catch(() => null);
+    }
+
+    function pollUntilDone(type, statusUrl) {
+        getStatus(statusUrl).then(status => {
+            if (status === 'processing' || status === null) {
+                setTimeout(() => pollUntilDone(type, statusUrl), 2000);
+            } else {
+                updateUI(type, false, status);
+            }
+        });
+    }
+
+    extractionButton.addEventListener('click', function () {
+        sessionStorage.setItem('extractionStarted', 'true');
+        updateUI('extraction', true, '');
+
+        fetch("{% url 'manual_extraction_run' %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': extractionForm.querySelector('[name=csrfmiddlewaretoken]').value,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(() => pollUntilDone('extraction', "{% url 'extraction_status' %}"))
+        .catch(err => {
+            updateUI('extraction', false, 'failed');
+            console.error('Extraction error:', err);
+        });
+    });
+
+    comparisonButton.addEventListener('click', function () {
+        sessionStorage.setItem('comparisonStarted', 'true');
+        updateUI('comparison', true, '');
+
+        fetch("{% url 'manual_comparison_run' %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': comparisonForm.querySelector('[name=csrfmiddlewaretoken]').value,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(() => pollUntilDone('comparison', "{% url 'comparison_status' %}"))
+        .catch(err => {
+            updateUI('comparison', false, 'failed');
+            console.error('Comparison error:', err);
+        });
+    });
+
+    // Restore status ONLY if the job was started in this session
+    if (sessionStorage.getItem('extractionStarted') === 'true') {
+        updateUI('extraction', true, '');
+        pollUntilDone('extraction', "{% url 'extraction_status' %}");
+    }
+
+    if (sessionStorage.getItem('comparisonStarted') === 'true') {
+        updateUI('comparison', true, '');
+        pollUntilDone('comparison', "{% url 'comparison_status' %}");
+    }
+});
+</script>
+{% endblock %}

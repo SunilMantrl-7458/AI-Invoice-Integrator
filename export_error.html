@@ -1,0 +1,7 @@
+{% extends "testapp/base.html" %}
+
+{% block content %}
+<h2>Export Error</h2>
+<div class="alert alert-danger">{{ error }}</div>
+<a href="{% url 'invoice-list' %}" class="btn btn-secondary">Back to Invoices</a>
+{% endblock %}

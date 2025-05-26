@@ -1,0 +1,99 @@
+{% extends 'testapp/base.html' %}
+
+{% block title %}Extract Invoice from PDF{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h4 class="mb-0">PDF Invoice Extraction</h4>
+    </div>
+    <div class="card-body">
+        <form id="pdfForm" enctype="multipart/form-data" class="mb-4">
+            {% csrf_token %}
+            
+            <div class="mb-3">
+                <label for="pdfFile" class="form-label">Select PDF File</label>
+                <div class="input-group">
+                    <input type="file" name="pdf" id="pdfFile" class="form-control" accept=".pdf" required>
+                    <span class="input-group-text">
+                        <i class="fas fa-file-pdf"></i>
+                    </span>
+                </div>
+                <div class="form-text">Maximum file size: 10MB</div>
+            </div>
+            
+            <button type="submit" class="btn btn-primary w-100" id="submitButton">
+                <i class="fas fa-magic me-2"></i>Extract Data
+            </button>
+        </form>
+
+        <div id="loadingMessage" class="text-center py-4" style="display: none;">
+            <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <h5 class="mt-3">Processing your document</h5>
+            <p class="text-muted">This may take a moment...</p>
+        </div>
+
+        <div id="resultContainer" class="mt-4" style="display: none;">
+            <h5 class="mb-3">Extracted Results</h5>
+            <div class="card">
+                <div class="card-body p-0">
+                    <pre id="result" class="m-0 p-3"></pre>
+                </div>
+            </div>
+            <button class="btn btn-outline-primary mt-3" onclick="copyToClipboard()">
+                <i class="fas fa-copy me-2"></i>Copy Results
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+    document.getElementById('pdfForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        // Show loading state
+        document.getElementById('loadingMessage').style.display = 'block';
+        document.getElementById('resultContainer').style.display = 'none';
+        document.getElementById('submitButton').disabled = true;
+
+        const formData = new FormData(this);
+
+        axios.post('/api/extract-invoice/', formData, {
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'multipart/form-data'
+            }
+        })
+        .then(response => {
+            document.getElementById('loadingMessage').style.display = 'none';
+            document.getElementById('submitButton').disabled = false;
+            document.getElementById('resultContainer').style.display = 'block';
+
+            if (response.data.data) {
+                document.getElementById('result').textContent = 
+                    JSON.stringify(response.data.data, null, 2);
+            } else {
+                document.getElementById('result').textContent = 
+                    'No structured data found in the document.';
+            }
+        })
+        .catch(error => {
+            document.getElementById('loadingMessage').style.display = 'none';
+            document.getElementById('submitButton').disabled = false;
+            document.getElementById('result').textContent = 
+                'Error: ' + (error.response?.data?.error || error.message);
+            document.getElementById('resultContainer').style.display = 'block';
+        });
+    });
+
+    function copyToClipboard() {
+        const resultText = document.getElementById('result').textContent;
+        navigator.clipboard.writeText(resultText)
+            .then(() => alert('Results copied to clipboard!'))
+            .catch(() => alert('Failed to copy results'));
+    }
+</script>
+{% endblock %}

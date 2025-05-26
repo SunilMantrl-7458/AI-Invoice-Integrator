@@ -1,0 +1,47 @@
+{% extends 'testapp/base.html' %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Admin Dashboard</h2>
+    <div class="list-group">
+        <a href="{% url 'admin_log_viewer' %}" class="list-group-item list-group-item-action">
+            View Application Logs
+        </a>
+        <button id="triggerRevalidationBtn" class="list-group-item list-group-item-action">
+            Trigger Re-validation (Data Extraction)
+        </button>
+        <a href="{% url 'admin_export_invoices' %}" class="list-group-item list-group-item-action">
+            Export Invoices Report (CSV)
+        </a>
+    </div>
+    <div id="revalidationResult" class="mt-3"></div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    $('#triggerRevalidationBtn').click(function() {
+        $('#revalidationResult').text('Triggering re-validation, please wait...');
+        $.ajax({
+            url: "{% url 'admin_trigger_revalidation' %}",
+            type: "POST",
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            success: function(response) {
+                $('#revalidationResult').text(response.message);
+            },
+            error: function(xhr) {
+                if (xhr.responseJSON && xhr.responseJSON.error) {
+                    $('#revalidationResult').text('Error: ' + xhr.responseJSON.error);
+                } else {
+                    $('#revalidationResult').text('An unexpected error occurred.');
+                }
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

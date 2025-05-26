@@ -1,0 +1,127 @@
+{% extends 'testapp/base.html' %}
+
+{% block title %}User List{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+    <h2 class="text-center">List Of Users</h2><br><br>
+    <form method="get" class="mb-3">
+        <div class="row g-3 align-items-center">
+            <div class="col-auto">
+                <label class="col-form-label">Filter by:</label>
+            </div>
+            <div class="col-auto">
+                <select id="roleFilter" name="role" class="form-select">
+                    <option value="">Role</option>
+                    <option value="admin" {% if role_filter == 'admin' %}selected{% endif %}>Admin</option>
+                    <option value="manager" {% if role_filter == 'manager' %}selected{% endif %}>Manager</option>
+                    <option value="user" {% if role_filter == 'user' %}selected{% endif %}>User</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <select id="statusFilter" name="status" class="form-select">
+                    <option value="">Status</option>
+                    <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                    <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary">Apply Filters</button>
+            </div>
+            <div class="col-auto">
+                <a href="{% url 'user_list' %}" class="btn btn-secondary">Reset</a>
+            </div>
+        </div>
+    </form>
+    <div class="d-flex justify-content-end mb-2">
+        <a href="{% url 'user_create' %}" class="btn btn-primary btn-sm">Add User</a>
+    </div>
+    <table class="table table-striped table-bordered">
+        <thead>
+            <tr>
+                <th>Serial Number</th>
+                <th>User Name</th>
+                <th>Role</th>
+                <th>Email ID</th>
+                <th>User From</th>
+            <th>Status</th>
+            <th>Action</th>
+        </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ user.username }}</td>
+                <td>{{ user.role|capfirst }}</td>
+                <td>{{ user.email }}</td>
+                <td>{{ user.date_joined|date:"d-m-Y" }}</td>
+                <td>
+                    {% if user.is_active %}
+                        Active
+                    {% else %}
+                        Inactive
+                    {% endif %}
+                </td>
+                <td>
+                    {% if not user.is_superuser %}
+                    <a href="{% url 'user_edit' user.id %}" class="btn btn-sm btn-warning">Edit</a>
+                    <form method="post" action="{% url 'user_delete' user.id %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this user?');">Delete</button>
+                    </form>
+                    <button class="btn btn-sm btn-info toggle-active-btn" data-userid="{{ user.id }}">
+                        {% if user.is_active %}
+                            Set Inactive
+                        {% else %}
+                            Set Active
+                        {% endif %}
+                    </button>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7">No users found.</td>
+            </tr>
+            {% endfor %}
+</table>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const buttons = document.querySelectorAll('.toggle-active-btn');
+    buttons.forEach(button => {
+        button.addEventListener('click', function() {
+            const userId = this.getAttribute('data-userid');
+            fetch("{% url 'toggle_user_active' user_id=0 %}".replace('0', userId), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ user_id: userId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Failed to toggle user status: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(() => alert('Error occurred while toggling user status.'));
+        });
+    });
+});
+</script>
+
+{% endblock %}

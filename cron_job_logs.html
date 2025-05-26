@@ -1,0 +1,107 @@
+{% extends "testapp/base.html" %}
+
+{% block content %}
+<h2>Extraction and Comparison Logs</h2>
+
+<div style="margin-bottom: 15px;">
+    <a href="?type=all" style="margin-right: 10px; {% if cron_type == 'all' %}font-weight: bold;{% endif %}">All Logs</a>
+    <a href="?type=extraction" style="margin-right: 10px; {% if cron_type == 'extraction' %}font-weight: bold;{% endif %}">Extraction Logs</a>
+    <a href="?type=comparison" style="{% if cron_type == 'comparison' %}font-weight: bold;{% endif %}">Comparison Logs</a>
+</div>
+
+<table border="1" cellpadding="5" cellspacing="0" style="width: 100%; border-collapse: collapse; border: 1px solid black;">
+    <thead>
+        <tr style="border-bottom: 2px solid black;">
+            <th style="border-right: 1px solid black; padding: 8px;">S.No</th>    
+            <th style="border-right: 1px solid black; padding: 8px;">Cron Type</th>
+            <th style="border-right: 1px solid black; padding: 8px;">Start Time</th>
+            <th style="border-right: 1px solid black; padding: 8px;">End Time</th>
+            <th style="border-right: 1px solid black; padding: 8px;">Status</th>
+            <th style="padding: 8px;">Message</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for log in logs %}
+        <tr style="border-bottom: 1px solid black;">
+            <td style="border-right: 1px solid black; padding: 8px;">{{ forloop.counter|add:page_obj.start_index|add:"-1" }}</td>
+
+            <td style="border-right: 1px solid black; padding: 8px;">
+                {% if 'extraction' in log.cron_code|lower %}
+                    Extraction
+                {% elif 'comparison' in log.cron_code|lower %}
+                    Comparison
+                {% else %}
+                    {{ log.cron_code }}
+                {% endif %}
+            </td>
+
+            <td style="border-right: 1px solid black; padding: 8px;">{{ log.start_time }}</td>
+            <td style="border-right: 1px solid black; padding: 8px;">{{ log.end_time }}</td>
+
+            {% if log.message == "Processing" %}
+                <td style="border-right: 1px solid black; padding: 8px;"><strong>Running.....</strong></td>
+                <td style="padding: 8px;"><strong>{{ log.message }}</strong></td>
+            {% else %}
+                <td style="border-right: 1px solid black; padding: 8px;">
+                    {% if log.is_success is not None %}
+                        {% if log.is_success %}
+                            <span style="color: green;">Success</span>
+                        {% else %}
+                            <span style="color: red;">Failed</span>
+                        {% endif %}
+                    {% else %}
+                        <span style="color: orange;">Unknown</span>
+                    {% endif %}
+                </td>
+                <td style="padding: 8px;">{{ log.message }}</td>
+            {% endif %}
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="6" style="padding: 8px;">No cron job logs found.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div style="margin-top: 10px;">
+    {% if page_obj.has_previous %}
+        <a href="?type={{ cron_type }}&page={{ page_obj.previous_page_number }}">Previous</a>
+    {% endif %}
+
+    <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+
+    {% if page_obj.has_next %}
+        <a href="?type={{ cron_type }}&page={{ page_obj.next_page_number }}">Next</a>
+    {% endif %}
+</div>
+
+<script>
+  function fetchStatusWithRetry(retries = 3) {
+    fetch("{% url 'extraction_status' %}")
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === 'unknown' && retries > 0) {
+          setTimeout(() => fetchStatusWithRetry(retries - 1), 2000);
+        } else {
+          document.getElementById('extraction-status').textContent = data.status;
+        }
+      })
+      .catch(() => {
+        document.getElementById('extraction-status').textContent = 'unknown';
+      });
+
+    fetch("{% url 'comparison_status' %}")
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('comparison-status').textContent = data.status;
+      })
+      .catch(() => {
+        document.getElementById('comparison-status').textContent = 'unknown';
+      });
+  }
+
+  fetchStatusWithRetry();
+  setInterval(fetchStatusWithRetry, 15000);
+</script>
+{% endblock %}

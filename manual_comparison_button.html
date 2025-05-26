@@ -1,0 +1,14 @@
+{% extends 'testapp/base.html' %}
+
+{% block title %}Manual Comparison Trigger{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <h2>Manual Data Comparison</h2>
+  <p>Click the button below to manually trigger the data comparison process.</p>
+  <form id="comparisonForm" method="post" action="{% url 'manual_comparison_trigger' %}">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-primary">Trigger Comparison</button>
+  </form>
+</div>
+{% endblock %}

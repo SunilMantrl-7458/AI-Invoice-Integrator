@@ -1,0 +1,283 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}Invoice App{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #34495e;
+            --accent-color: #3498db;
+            --light-color: #ecf0f1;
+            --dark-color: #2c3e50;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+        }
+
+        .sidebar {
+            background: var(--primary-color);
+            min-height: 100vh;
+            width: 250px;
+            position: fixed;
+            transition: all 0.3s;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+
+        .sidebar-header h3 img {
+            height: 5cm;
+            width: 5cm;
+            object-fit: contain;
+            margin-right:auto;
+            margin-left: auto;
+        }
+
+        .sidebar-header h3 {
+            color: white;
+            margin: 0;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+        }
+
+        .sidebar-menu {
+            padding: 20px 0;
+        }
+
+        .sidebar-menu a {
+            color: var(--light-color);
+            padding: 12px 20px;
+            margin: 5px 0;
+            display: block;
+            text-decoration: none;
+            transition: all 0.3s;
+            border-left: 3px solid transparent;
+        }
+
+        .sidebar-menu a:hover, 
+        .sidebar-menu a.active {
+            background: rgba(255,255,255,0.1);
+            border-left: 3px solid var(--accent-color);
+            color: white;
+        }
+
+        .sidebar-menu a i {
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .navbar {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 15px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 999;
+        }
+
+        .user-profile {
+            cursor: pointer;
+        }
+
+        .user-profile img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            transition: transform 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card-header {
+            background: var(--primary-color);
+            color: white;
+            border-radius: 10px 10px 0 0 !important;
+        }
+
+        .btn-primary {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+        }
+
+        .btn-primary:hover {
+            background-color: #2980b9;
+            border-color: #2980b9;
+        }
+
+        .stylish-sub-option {
+            color: #3498db;
+            font-weight: bold;
+            padding: 8px 16px;
+            border-radius: 5px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .stylish-sub-option:hover {
+            background-color: #2980b9;
+            color: #fff;
+        }
+
+        .stylish-main-option {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 10px 15px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .stylish-main-option:hover {
+            background-color: #34495e;
+            color: #fff;
+        }
+
+        .stylish-icon {
+            margin-right: 10px;
+            font-size: 1.2em;
+        }
+
+        .stylish-text {
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .stylish-submenu {
+            margin-top: 10px;
+            padding-left: 20px;
+        }
+
+        .stylish-sub-option {
+            display: flex;
+            align-items: center;
+            color: #3498db;
+            font-weight: bold;
+            padding: 8px 16px;
+            border-radius: 5px;
+            transition: background-color 0.3s, color 0.3s;
+            text-decoration: none;
+        }
+
+        .stylish-sub-option:hover {
+            background-color: #2980b9;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h3>
+                <img src="{% static 'images/Biological_E_logo-removebg-preview.png' %}" alt="Logo" />
+            </h3>
+        </div>
+        <div class="sidebar-menu">
+            <a href="{% url 'invoice-list' %}" class="{% if request.path == '/invoices/' %}active{% endif %}">
+                <i class="fas fa-list"></i>
+                <span>Dashboard</span>
+            </a>
+            {% if request.user.role == 'admin' or request.user.role == 'manager' %}
+            <a href="#" class="d-flex align-items-center stylish-main-option" data-bs-toggle="collapse" data-bs-target="#cronSubmenu" aria-expanded="false">
+                <i class="fas fa-clock stylish-icon"></i>
+                <span class="stylish-text">Cron Job</span>
+            </a>
+            <div class="collapse stylish-submenu" id="cronSubmenu">
+                <div class="d-flex flex-column">
+                    <a href="{% url 'manual_extraction_button' %}" class="ms-4 stylish-sub-option d-inline-flex align-items-center">
+                        <i class="fas fa-arrow-right stylish-icon"></i>
+                        <span class="stylish-text">Extraction</span>
+                    </a>
+                    <a href="{% url 'manual_comparison_button' %}" class="ms-4 stylish-sub-option d-inline-flex align-items-center">
+                        <i class="fas fa-arrow-right stylish-icon"></i>
+                        <span class="stylish-text">Comparison</span>
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if request.user.role == 'admin' %}
+            <a href="/admin/" class="{% if request.path == '/admin/' %}active{% endif %}">
+                <i class="fas fa-cog"></i>
+                <span>Admin Panel</span>
+            </a>
+            <a href="{% url 'user_create' %}" class="{% if request.path == '/users/create/' %}active{% endif %}">
+                <i class="fas fa-user-plus"></i>
+                <span>Add User</span>
+            </a>
+            <a href="{% url 'user_list' %}" class="{% if request.path == '/users/' %}active{% endif %}">
+                <i class="fas fa-users"></i>
+                <span>User List</span>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="main-content">
+        <nav class="navbar navbar-expand">
+            <div class="container-fluid justify-content-end">
+                <div class="user-profile dropdown">
+                    <a class="dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown">
+                        <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="User" />
+                        <span class="ms-2">{{ request.user.username }}</span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><h6 class="dropdown-header">Logged in as</h6></li>
+                        <li class="dropdown-item-text">
+                            <strong>Username:</strong> {{ request.user.username }}
+                        </li>
+                        <li class="dropdown-item-text">
+                            <strong>Role:</strong> {{ request.user.role|capfirst }}
+                        </li>
+                        {% if request.user.email %}
+                        <li class="dropdown-item-text">
+                            <strong>Email:</strong> {{ request.user.email }}
+                        </li>
+                        {% endif %}
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <form method="POST" action="{% url 'logout' %}">
+                                {% csrf_token %}
+                                <button type="submit" class="dropdown-item">
+                                    <i class="fas fa-sign-out-alt me-2"></i>Logout
+                                </button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container-fluid py-4">
+            {% block content %}
+            <!-- Page content will be injected here -->
+            {% endblock %}
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

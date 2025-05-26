@@ -1,0 +1,13 @@
+{% extends "testapp/base.html" %}
+
+{% block content %}
+<h2>Re-validation Result</h2>
+{% if error %}
+    <div class="alert alert-danger">{{ error }}</div>
+{% else %}
+    <p>Re-validation completed successfully.</p>
+    <p>Domestic mismatched count: {{ domestic_mismatched_count_total }}</p>
+    <p>Import mismatched count: {{ import_mismatched_count_total }}</p>
+{% endif %}
+<a href="{% url 'revalidation_trigger' %}" class="btn btn-secondary">Back</a>
+{% endblock %}
